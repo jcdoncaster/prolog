@@ -1,0 +1,41 @@
+$folderToWatch = "C:\Users\JC\Desktop\prolog"
+$lastCheck = Get-Date
+
+Write-Host "POLLING WATCHER ACTIVE on $folderToWatch" -ForegroundColor Yellow
+Write-Host "Checking for changes every 5 seconds..." -ForegroundColor Gray
+
+try {
+    while ($true) {
+        # Find any "prolog" files modified since our last check
+        $changedFiles = Get-ChildItem -Path $folderToWatch -Filter *.pl -Recurse | 
+                        Where-Object { $_.LastWriteTime -gt $lastCheck }
+
+        if ($changedFiles) {
+            $lastCheck = Get-Date # Update timer immediately
+            foreach ($file in $changedFiles) {
+                $timeStamp = $lastCheck.ToString("HH:mm:ss")
+                Write-Host "[$timeStamp] Change detected in: $($file.Name)" -ForegroundColor Cyan
+                
+                try {
+                    Set-Location $folderToWatch
+                    # Clean up git locks if they exist
+                    if (Test-Path ".git\index.lock") { Remove-Item ".git\index.lock" -Force }
+                    
+                    git add .
+                    git commit -m "Auto-sync: $($file.Name) at $timeStamp" --quiet
+                    git push --quiet
+                    Write-Host "[$timeStamp] SUCCESS: Pushed to GitHub." -ForegroundColor Green
+                }
+                catch {
+                    Write-Host "[$timeStamp] SYNC ERROR: $_" -ForegroundColor Red
+                }
+            }
+        }
+        
+        Write-Host "." -NoNewline # Heartbeat
+        Start-Sleep -Seconds 5
+    }
+}
+finally {
+    Write-Host "`nWatcher stopped." -ForegroundColor Red
+}
