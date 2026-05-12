@@ -4,7 +4,12 @@ PROLOG, thats so hidious that i dont know how to say that i myself am not really
 it. idk how my ancestors worked in it." - A confused student */
 
 % Facts
-number(1:10).
+number(1).
+number(2).
+number(3).
+number(4).
+number(5).
+
 % Rules
 even(X) :- number(X), X mod 2 =:= 0.
 odd(X) :- number(X), X mod 2 =:= 1.
